@@ -209,6 +209,8 @@ class RemoteInstrument:
 		self.log = log
 		self.client_agent = ca
 		
+		self.state = {}
+		
 		self.last_remote_call_id = 0
 		self.synchronous_reply_timeout_s = 15 # Time waited for a reply on synchronous calls. Set to -1 for infinite.
 		self.synchronous_reply_period_s = 0.1 # Interval to wait between reply checks
@@ -323,6 +325,63 @@ class RemoteInstrument:
 			self.log.error(f"Received more than one response to get_sync_reply()! Synchonous mode has failed.")
 			return (True, reps[0])
 			
+	def sync_state(self, timeout_s:float=None):
+		'''
+		Synchonous call to update the state dictionary. Does not force the driver
+		to refresh it's state with the instrument, only queries the driver object
+		for it's state dictionary.
+		'''
+		
+		# Enter debug log
+		self.log.debug(f"Initializing sync_state...")
+		
+		# Create GC
+		gc = GenCommand("SYNCSTATE", {"LOCAL_RCALL_ID":self.next_rcall_id(), "REMOTE-ID":self.id.remote_id, "REMOTE-ADDR":self.id.remote_addr})
+		
+		# Send command and get reply
+		data_packet = self.query_command(gc)
+		
+		# Check for missing packet
+		if data_packet is None:
+			self.log.error(f"TC-LISTEN received no datapacket.")
+			self.connected = False
+			return None
+		
+		# Check for error in packet
+		if not data_packet.validate_reply(['STATUS', 'NETREPLS'], self.log):
+			self.log.error(f"TC-LISTEN received invalid GenData reply.")
+			self.connected = False
+			return None
+		
+		# Unpack all received netreplies
+		netrepls = []
+		for nrp in data_packet.data['NETREPLS']:
+			
+			# Create NC from unpacking string
+			nr = NetworkReply()
+			nr.unpack(nrp)
+			
+			# Add to list
+			netrepls.append(nr)
+		
+		return netrepls
+		
+		
+		#===================================================
+		
+		
+		# Get reply from instrumnet
+		gsr = self.get_sync_reply(timeout_s)
+		try:
+			if not gsr[0]:
+				self.log.error(f"sync_state failed: No synchronous reply received!")
+				rval = None
+			else:
+				rval = gsr[1]
+		except Exception as e:
+			self.log.error(f"Failed to interpret response from synchronous reply.", detail=f"{e}")
+			rval = None
+		
 	
 	def next_rcall_id(self):
 		self.last_remote_call_id += 1

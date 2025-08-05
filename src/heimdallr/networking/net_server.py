@@ -158,6 +158,32 @@ def server_callback_send(sa:ServerAgent, gc:GenCommand):
 		
 		return True
 	
+	elif gc.command == "REMCALL":
+		
+		# Check fields present
+		if not gc.validate_command(["LOCAL_RCALL_ID", "REMOTE-ID", "REMOTE-ADDR"], log):
+			return False
+		
+		# Create a NetworkCommand object
+		nc = NetworkCommand(gc=gc)
+		
+		# Populate source-client ID
+		nc.source_client = sa.app_data[CLIENT_ID]
+		nc.timestamp = (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
+		
+		# Add to master net command
+		with serv_master.master_net_cmd.mtx:
+			serv_master.master_net_cmd.append(nc)
+		
+		#TODO: Have the server periodically check that all NetworkCommand objects
+		#      correspond to target_clients that exist. Purge those that are more 
+		#      than X amount old.
+		
+		#TODO: This command should only be callable when the client is logged in.
+		#      you should first check that a client has been authorized.
+		
+		return True
+	
 	elif gc.command == "REMREPLY":
 		
 		# Check fields present
