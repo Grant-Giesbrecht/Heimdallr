@@ -49,6 +49,7 @@ class OscilloscopeCtg1(OscilloscopeCtg0):
 				case "get_div_time":
 					return self.dummy_state_machine['div_time']
 				case "set_offset_time":
+					pass
 		except Exception as e:
 			self.error(f"Failed to respond to dummy instruction. ({e})")
 			return None

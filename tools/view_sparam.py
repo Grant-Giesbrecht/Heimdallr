@@ -66,7 +66,7 @@ elif (args.xmax is not None):
 
 
 
-
+plt.legend()
 
 mplcursors.cursor(multiple=True)
 

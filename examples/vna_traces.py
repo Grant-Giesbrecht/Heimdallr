@@ -2,9 +2,14 @@ from heimdallr.all import *
 import matplotlib.pyplot as plt
 from jarnsaxa import hdf_to_dict, dict_to_hdf
 
-FILENAME = "SParameters_XLD_Chip_LongTrace_23July2025.hdf"
+
+
+FILENAME = input("Filename:")
+cal_notes = input("Calibration notes:")
+other_notes = input("Other notes?:")
 
 zva = RohdeSchwarzZVA("TCPIP0::169.254.131.24::INSTR", log)
+
 
 td_s11 = zva.get_trace_data(1, "Trc2")
 td_s22 = zva.get_trace_data(1, "Trc4")
@@ -14,10 +19,11 @@ td_s21 = zva.get_trace_data(1, "Trc3")
 zva.write("CALC:PAR:CAT?")
 trace_list = zva.inst.read().strip().split(',')
 
-dict_to_hdf({"S11": td_s11, "S22":td_s22, "S12":td_s12, "S21":td_s21}, FILENAME)
+dict_to_hdf({"data":{"S11": td_s11, "S22":td_s22, "S12":td_s12, "S21":td_s21}, "info":{"cal_notes":cal_notes, "gen_notes":other_notes}}, FILENAME)
 
 
-data = hdf_to_dict(FILENAME)
+all_data = hdf_to_dict(FILENAME)
+data = all_data['data']
 
 plot_vna_mag(data['S11'], label="S11")
 plot_vna_mag(data['S22'], label="S22")
